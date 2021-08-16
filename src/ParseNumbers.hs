@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module ParseNumbers
   ( nDigitInt
   , limit
@@ -6,7 +8,8 @@ module ParseNumbers
 
 import Common
 
-import Text.Parsec.Text ( GenParser )
+import Text.Parsec ( ParsecT, Stream )
+import Data.Text ( Text )
 import Text.Parsec ( char, digit, notFollowedBy, (<?>), (<|>), try )
 import Control.Monad ( when )
 import Data.Word
@@ -20,7 +23,8 @@ Test the parsed value.  Note: `check t p` uses `try p`, and succeeds
 iff `t <$> p`.
 -}
 
-check :: (a -> Bool) -> GenParser u a -> GenParser u a
+check :: Stream s m Char
+      => (a -> Bool) -> ParsecT s u m a -> ParsecT s u m a
 
 check t p = try $ do
   x <- p
@@ -32,7 +36,8 @@ check t p = try $ do
 Enforces limits on parsed value.  First argument is for error message.
 -}
 
-limit :: (Ord a, Show a) => String -> a -> a -> GenParser u a -> GenParser u a
+limit :: (Ord a, Show a, Stream s m Char)
+      => String -> a -> a -> ParsecT s u m a -> ParsecT s u m a
 
 limit what lo hi p =
   check ((>= lo) &&& (<= hi)) p
@@ -44,40 +49,40 @@ limit what lo hi p =
 Parses one decimal digit into its value.
 -}
 
-decimalDigit :: GenParser u Int
+decimalDigit :: (Stream s m Char, Num a) => ParsecT s u m a
 
-decimalDigit = subtract (fromEnum '0') . fromEnum <$> digit
+decimalDigit = fromIntegral . subtract (fromEnum '0') . fromEnum <$> digit
 
 
 {-
 Parse an integer represented by exactly n digits.  This parser does
 not fail if unconsumed digits remain, which allows followup parsers to
-consume more digits..
+consume followup digits.
 -}
 
-nDigitInt :: Integral a => Int -> GenParser u a
+nDigitInt :: (Integral a, Stream s m Char) => Int -> ParsecT s u m a
 
 nDigitInt = go 0
   where
     go !acc 0 = return acc
     go !acc r = do
-      d <- fromIntegral <$> decimalDigit
+      d <- decimalDigit
       go (10 * acc + d) (r - 1)
 
 
 
 {- Note: `hi` must be positive, lower bound is 0. -}
 
-unsigned :: Integral a => a -> GenParser u a
+unsigned :: (Integral a, Stream s m Char) => a -> ParsecT s u m a
 
-unsigned hi = zero <|> go 0
+unsigned hi = zero <|> (decimalDigit >>= go)
   where
     zero = char '0' >> notFollowedBy digit >> pure 0
 
     go !acc = more <|> pure acc
       where
         more = do
-          d <- fromIntegral <$> decimalDigit
+          d <- decimalDigit
           acc < lim || (acc == lim && d <= m) ? go (10 * acc + d)
             $ fail "out of bounds"
 
@@ -85,39 +90,42 @@ unsigned hi = zero <|> go 0
 
 
 {-
-Note: `lo` must be negative, lower bound is 1.  Note, that is not
-straight forward to express `negative` by means of `unsigned`.  The
-approach of `char '-' >> negate <$> unsigned (negate minBound)` fails,
-because the negation of the lower bound may not be within the upper
-bound, and thus wrap around, e.g., `negate $ minBound :: Int8` →
-`-128` which is incorrect.
+Note: `lo` must be negative, lower bound is 1.
+
+Note, that is not straight forward to express `negative` by means of
+`unsigned`.  The approach of `char '-' >> negate <$> unsigned (negate
+minBound)` fails, because the negation of the lower bound may not be
+within the upper bound, and thus wrap around, e.g., incorrectly
+`negate (minBound :: Int8)` → `-128` due to the upper bound of `127`.
 -}
 
-negative :: Integral a => a -> GenParser u a
+negative :: (Integral a, Stream s m Char) => a -> ParsecT s u m a
 
-negative lo = char '-' >> notFollowedBy (char '0') >> go 0
+negative lo = char '-' >> notFollowedBy (char '0') >> ndd >>= go
   where
     go !acc = more <|> pure acc
       where
         more = do
-          d <- negate . fromIntegral <$> decimalDigit
+          d <- ndd
           lim < acc || (acc == lim && m <= d) ? go (10 * acc + d)
             $ fail "out of bounds"
 
     (lim, m) = lo `quotRem` 10
 
+    ndd = negate <$> decimalDigit
+
 
 {- Note: `lo` must be negative, `hi` must be positive. -}
 
-signed :: Integral a => a -> a -> GenParser u a
+signed :: (Integral a, Stream s m Char) => a -> a -> ParsecT s u m a
 
-signed lo hi = negative lo <|> unsigned hi
+signed lo hi = unsigned hi <|> negative lo
 
 
 
 
 class Integral a => ParseBoundedInt a where
-  bounded :: GenParser u a
+  bounded :: Stream s m Char => ParsecT s u m a
 
 
 
@@ -152,4 +160,3 @@ instance ParseBoundedInt Int32 where
 
 instance ParseBoundedInt Int64 where
   bounded = signed (minBound :: Int64) (maxBound :: Int64)
-
