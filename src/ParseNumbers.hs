@@ -70,8 +70,21 @@ nDigitInt = go 0
       go (10 * acc + d) (r - 1)
 
 
+----------------------------------------------------------------------
+-- Bounded numbers
 
-{- Note: `hi` must be positive, lower bound is 0. -}
+{-
+The following parsers fail instead of wrapping around, when a numeral
+exceeds the limits.
+-}
+
+
+{-
+`unsigned hi` parses an unsigned decimal integer in the range 0
+.. `hi`.  The type must be big enough to contain that range.  `hi`
+must be positive, the lower bound is 0.  Leading zero is not
+permitted.
+-}
 
 unsigned :: (Integral a, Stream s m Char) => a -> ParsecT s u m a
 
@@ -90,13 +103,19 @@ unsigned hi = zero <|> (decimalDigit >>= go)
 
 
 {-
-Note: `lo` must be negative, lower bound is 1.
+This is normally not used alone, use `unsigned` or `signed` instead.
+
+`negative lo` parses a negative decimal integer in the range `lo`
+.. -1.  The type must be big enough to contain that range.  `lo` must
+be negative, the upper bound is -1.  A zero after the `-` is not
+permitted.
 
 Note, that is not straight forward to express `negative` by means of
-`unsigned`.  The approach of `char '-' >> negate <$> unsigned (negate
-minBound)` fails, because the negation of the lower bound may not be
-within the upper bound, and thus wrap around, e.g., incorrectly
-`negate (minBound :: Int8)` → `-128` due to the upper bound of `127`.
+`unsigned`.  Aside from the special case of catching `-0`, the
+approach to use `char '-' >> negate <$> unsigned (negate minBound)`
+fails, because the negation of the lower bound may not be within the
+upper bound, and thus wrap around, e.g., incorrectly `negate (minBound
+:: Int8)` → `-128` due to the upper bound of `127`.
 -}
 
 negative :: (Integral a, Stream s m Char) => a -> ParsecT s u m a
@@ -115,19 +134,27 @@ negative lo = char '-' >> notFollowedBy (char '0') >> ndd >>= go
     ndd = negate <$> decimalDigit
 
 
-{- Note: `lo` must be negative, `hi` must be positive. -}
+{-
+`signed lo hi` parses a signed decimal integer in the range `lo`
+.. `hi`.  The type must be big enough to contain that range.  `lo`
+must be negative, and `hi` must be positive.  A leading zero (or
+following the optional leading `-`) is not allowed.
+-}
 
 signed :: (Integral a, Stream s m Char) => a -> a -> ParsecT s u m a
 
 signed lo hi = unsigned hi <|> negative lo
 
 
+{-
+`bounded` parses a bounded decimal integer, and fails if the limits
+are exceeded.
+-}
+
 
 
 class Integral a => ParseBoundedInt a where
   bounded :: Stream s m Char => ParsecT s u m a
-
-
 
 
 instance ParseBoundedInt Word where
