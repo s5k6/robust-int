@@ -3,7 +3,7 @@
 module ParseNumbers
   ( nDigitInt
   , limit
-  , ParseBoundedInt, bounded
+  , ParseBoundedInt, bounded, unsigned, negative, signed
   ) where
 
 import Common
@@ -157,33 +157,14 @@ class Integral a => ParseBoundedInt a where
   bounded :: Stream s m Char => ParsecT s u m a
 
 
-instance ParseBoundedInt Word where
-  bounded = unsigned (maxBound :: Word)
+instance ParseBoundedInt Word where bounded = unsigned maxBound
+instance ParseBoundedInt Word8 where bounded = unsigned maxBound
+instance ParseBoundedInt Word16 where bounded = unsigned maxBound
+instance ParseBoundedInt Word32 where bounded = unsigned maxBound
+instance ParseBoundedInt Word64 where bounded = unsigned maxBound
 
-instance ParseBoundedInt Word8 where
-  bounded = unsigned (maxBound :: Word8)
-
-instance ParseBoundedInt Word16 where
-  bounded = unsigned (maxBound :: Word16)
-
-instance ParseBoundedInt Word32 where
-  bounded = unsigned (maxBound :: Word32)
-
-instance ParseBoundedInt Word64 where
-  bounded = unsigned (maxBound :: Word64)
-
-
-instance ParseBoundedInt Int where
-  bounded = signed (minBound :: Int) (maxBound :: Int)
-
-instance ParseBoundedInt Int8 where
-  bounded = signed (minBound :: Int8) (maxBound :: Int8)
-
-instance ParseBoundedInt Int16 where
-  bounded = signed (minBound :: Int16) (maxBound :: Int16)
-
-instance ParseBoundedInt Int32 where
-  bounded = signed (minBound :: Int32) (maxBound :: Int32)
-
-instance ParseBoundedInt Int64 where
-  bounded = signed (minBound :: Int64) (maxBound :: Int64)
+instance ParseBoundedInt Int where bounded = signed minBound maxBound
+instance ParseBoundedInt Int8 where bounded = signed minBound maxBound
+instance ParseBoundedInt Int16 where bounded = signed minBound maxBound
+instance ParseBoundedInt Int32 where bounded = signed minBound maxBound
+instance ParseBoundedInt Int64 where bounded = signed minBound maxBound
