@@ -1,4 +1,5 @@
-cabal-version:       >=1.10
+cabal-version:       3.4
+-- For further documentation, see http://haskell.org/cabal/users-guide/
 
 name:                robust-int
 version:             0.0.0.0
@@ -14,26 +15,84 @@ maintainer:          git@stefan-klinger.de
 build-type:          Simple
 extra-source-files:  CHANGELOG.md
 
-executable robust
+
+common shared-properties
   default-language:    Haskell2010
   default-extensions:  BangPatterns
                      , ScopedTypeVariables
                      , OverloadedStrings
 
-  main-is:             Main.hs
-  hs-source-dirs:      src
-
-  other-modules:       Common, ParseNumbers
-  -- other-extensions:
-
   -- see [1] for warnings
   ghc-options:         -Wall -Werror
                        -Wno-unused-imports -Wno-unused-top-binds
 
-  build-depends:       base >=4.14 && <4.15
-                     , containers >= 0.6.2 && < 0.7
+
+library
+  import:              shared-properties
+  hs-source-dirs:      src
+
+  exposed-modules:     Robust.Parsec, Robust.Attoparsec
+  other-modules:       Common
+
+  build-depends:       base >=4.14 && <4.16
                      , parsec >= 3.1.14 && < 3.2
-                     , bytestring >= 0.10.12 && < 0.11
+                     , attoparsec >= 0.14.2 && < 0.15
+                     , bytestring >= 0.10.12.1 && < 0.11
                      , text >= 1.2 && < 1.3
+
+
+-- Testing --
+-------------
+
+-- Make library's private modules avaliable in test suite, use random
+-- name to avoid shadowing.
+
+library internal-6BPcqrt4ct4U
+  import:              shared-properties
+  hs-source-dirs:      src
+  exposed-modules:     Common
+  build-depends:       base
+
+
+test-suite parsec
+  import:              shared-properties
+  type:                exitcode-stdio-1.0
+
+  hs-source-dirs:      test
+  main-is:             Parsec.hs
+
+  build-depends:       robust-int
+                     , robust-int:internal-6BPcqrt4ct4U
+                     , base >=4.14 && <4.16
+                     , parsec >= 3.1.14 && < 3.2
+                     , text >= 1.2 && < 1.3
+
+test-suite attoparsecText
+  import:              shared-properties
+  type:                exitcode-stdio-1.0
+
+  hs-source-dirs:      test
+  main-is:             AttoparsecText.hs
+
+  build-depends:       robust-int
+                     , robust-int:internal-6BPcqrt4ct4U
+                     , base >=4.14 && <4.16
+                     , text >= 1.2 && < 1.3
+                     , attoparsec >= 0.14.2 && < 0.15
+
+test-suite attoparsecBytestring
+  import:              shared-properties
+  type:                exitcode-stdio-1.0
+
+  hs-source-dirs:      test
+  main-is:             AttoparsecByteString.hs
+
+  build-depends:       robust-int
+                     , robust-int:internal-6BPcqrt4ct4U
+                     , base >=4.14 && <4.16
+                     , bytestring >= 0.10.12.1 && < 0.11
+                     , attoparsec >= 0.14.2 && < 0.15
+                     , utf8-string >= 1.0.2 && < 1.1
+
 
 -- [1]: https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/using-warnings.html

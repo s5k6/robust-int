@@ -1,29 +1,18 @@
 
 module Main ( main ) where
 
-import Data.Text ( pack )
-import Text.Parsec.Text ( GenParser )
-import Text.Parsec ( parse, eof )
-import System.Environment ( getArgs )
-import System.Exit ( exitFailure )
-import Common
-import ParseNumbers
+
+import Data.ByteString ( ByteString, pack )
+import Data.ByteString.UTF8 ( fromString )
 import Data.Word
 import Data.Int
-import Control.Monad ( unless )
 import Data.Proxy
+import Common
+import Control.Monad ( unless )
 
+import Robust.Attoparsec -- ( ParseBoundedInt, bounded )
 
-
-
-----------------------------------------------------------------------
--- Tests
-
-
-{-
-Note: QuickCheck's `resize` limits the “size” of samples to `Int`,
-but we want to go beyond that.
--}
+import Data.Attoparsec.ByteString ( parseOnly, endOfInput, eitherResult )
 
 
 {-
@@ -33,7 +22,7 @@ maybe the value.  This subsumes all error messages under `Nothing`.
 
 testBounded :: ParseBoundedInt a => String -> Maybe a
 
-testBounded t = case parse (bounded <* eof) t (pack t) of
+testBounded t = case parseOnly (bounded <* endOfInput) (fromString t) of
   Right v -> Just v
   Left _ -> Nothing
 
@@ -142,15 +131,14 @@ instance Named Int64 where name _ = "Int64"
 
 main :: IO ()
 main = do
+   testUnsigned (Proxy :: Proxy Word)
+   testUnsigned (Proxy :: Proxy Word8)
+   testUnsigned (Proxy :: Proxy Word16)
+   testUnsigned (Proxy :: Proxy Word32)
+   testUnsigned (Proxy :: Proxy Word64)
 
-  testUnsigned (Proxy :: Proxy Word)
-  testUnsigned (Proxy :: Proxy Word8)
-  testUnsigned (Proxy :: Proxy Word16)
-  testUnsigned (Proxy :: Proxy Word32)
-  testUnsigned (Proxy :: Proxy Word64)
-
-  testSigned (Proxy :: Proxy Int)
-  testSigned (Proxy :: Proxy Int8)
-  testSigned (Proxy :: Proxy Int16)
-  testSigned (Proxy :: Proxy Int32)
-  testSigned (Proxy :: Proxy Int64)
+   testSigned (Proxy :: Proxy Int)
+   testSigned (Proxy :: Proxy Int8)
+   testSigned (Proxy :: Proxy Int16)
+   testSigned (Proxy :: Proxy Int32)
+   testSigned (Proxy :: Proxy Int64)

@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 
-module ParseNumbers
+module Robust.Parsec
   ( nDigitInt
   , limit
   , ParseBoundedInt, bounded, unsigned, negative, signed
@@ -12,6 +12,7 @@ import Text.Parsec ( ParsecT, Stream )
 import Data.Text ( Text )
 import Text.Parsec ( char, digit, notFollowedBy, (<?>), (<|>), try )
 import Control.Monad ( when )
+
 import Data.Word
 import Data.Int
 
