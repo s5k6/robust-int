@@ -1,5 +1,4 @@
 
-
 module Robust.Attoparsec
   ( nDigitInt
   , limit
@@ -8,8 +7,9 @@ module Robust.Attoparsec
 
 import Common
 
--- parsing UTF-8 encoded text
-import Data.Attoparsec.Text ( Parser, char, string, digit, peekChar, (<?>) )
+
+import Data.Attoparsec.Internal.Types ( Parser )
+import Data.Attoparsec.Combinator ( (<?>) )
 
 import Control.Monad ( when )
 import Control.Applicative ( (<|>) )
@@ -17,15 +17,22 @@ import Control.Applicative ( (<|>) )
 import Data.Int ( Int8, Int16, Int32, Int64 )
 import Data.Word ( Word8, Word16, Word32, Word64 )
 
+-- parsing UTF-8 encoded text
+import qualified Data.Attoparsec.Text as T
+import qualified Data.Text as T
+
+import qualified Data.Attoparsec.ByteString as B
+import qualified Data.ByteString as B
+
 
 ----------------------------------------------------------------------
--- number parsing primitives
+-- parsing primitives
 
 {-
 Test the parsed value, succeeds iff `t <$> p`.
 -}
 
-check :: (a -> Bool) -> Parser a -> Parser a
+check :: (a -> Bool) -> Parser i a -> Parser i a
 
 check t p = do
   x <- p
@@ -38,21 +45,50 @@ check t p = do
 Enforces limits on parsed value.
 -}
 
-limit :: Ord a => a -> a -> Parser a -> Parser a
+limit :: Ord a => a -> a -> Parser i a -> Parser i a
 
 limit lo hi = check $ (>= lo) &&& (<= hi)
 
 
+----------------------------------------------------------------------
+-- abstraction from input stream
 
-{-
-Parses one decimal digit into its value.
--}
+class Generic i where
 
-decimalDigit :: Num a => Parser a
+  -- parse and convert one decimal digit
+  decimalDigit :: Num a => Parser i a
 
-decimalDigit = fromIntegral . subtract (fromEnum '0') . fromEnum <$> digit
+  -- assure no more digits follow
+  noMoreDigits :: Parser i ()
+
+  -- parse a minus sign
+  minus :: Parser i ()
 
 
+instance Generic T.Text where
+  decimalDigit =
+    fromIntegral . subtract (fromEnum '0') . fromEnum <$> T.digit
+
+  noMoreDigits =
+    check (maybe True $ (< '0') ||| (> '9')) T.peekChar >> pure ()
+
+  minus =
+    T.char '-' >> pure ()
+
+
+instance Generic B.ByteString where
+  decimalDigit =
+    fromIntegral . subtract 48 <$> limit 48 57 B.anyWord8
+
+  noMoreDigits =
+    check (maybe True $ (< 48) ||| (> 57)) B.peekWord8 >> pure ()
+
+  minus =
+    B.word8 45 >> pure ()
+
+
+----------------------------------------------------------------------
+-- Fixed length number
 
 {-
 Parse an integer represented by exactly n digits.  This parser does
@@ -60,7 +96,7 @@ not fail if unconsumed digits remain, which allows follow-up parsers
 to consume follow-up digits.
 -}
 
-nDigitInt :: Integral a => Int -> Parser a
+nDigitInt :: (Integral a, Generic i) => Int -> Parser i a
 
 nDigitInt = go 0
   where
@@ -90,7 +126,7 @@ to just reading fewer digits.  This is achieved by hoisting the
 decision of success in line A above the alternative in line B.
 -}
 
-unsigned :: Integral a => a -> Parser a
+unsigned :: (Integral a, Generic i) => a -> Parser i a
 
 unsigned hi = decimalDigit >>= start
   where
@@ -105,9 +141,6 @@ unsigned hi = decimalDigit >>= start
 
     (lim, m) = hi `divMod` 10
     ok acc d = acc < lim || (acc == lim && d <= m)
-
-    noMoreDigits = check (maybe True $ (< '0') ||| (> '9')) peekChar
-      <?> "nondigit"
 
     oob = fail "out of bounds"
 
@@ -128,9 +161,9 @@ upper bound, and thus wrap around, e.g., incorrectly `negate (minBound
 :: Int8)` → `-128` due to the upper bound of `127`.
 -}
 
-negative :: Integral a => a -> Parser a
+negative :: (Generic i, Integral a) => a -> Parser i a
 
-negative lo = char '-' >> ndd >>= start
+negative lo = minus >> ndd >>= start
   where
     start 0 = fail "negative zero"
     start d | lo <= d = go d >>= maybe oob pure   -- A
@@ -157,7 +190,7 @@ must be negative, and `hi` must be positive.  A leading zero (or
 following the optional leading `-`) is not allowed.
 -}
 
-signed :: Integral a => a -> a -> Parser a
+signed :: (Generic i, Integral a) => a -> a -> Parser i a
 
 signed lo hi = unsigned hi <|> negative lo
 
@@ -171,7 +204,7 @@ rather use `signed` or `unsigned` instead.
 -}
 
 class Integral a => ParseBoundedInt a where
-  bounded :: Parser a
+  bounded :: Generic i => Parser i a
 
 instance ParseBoundedInt Word where bounded = unsigned maxBound
 instance ParseBoundedInt Word8 where bounded = unsigned maxBound
