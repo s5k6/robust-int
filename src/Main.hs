@@ -7,7 +7,7 @@ import Text.Parsec ( parse, eof )
 import System.Environment ( getArgs )
 import System.Exit ( exitFailure )
 import Common
-import ParseNumbers
+import Robust.Parsec
 import Data.Word
 import Data.Int
 import Control.Monad ( unless )

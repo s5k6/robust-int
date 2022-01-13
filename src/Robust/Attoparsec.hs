@@ -1,6 +1,6 @@
-{-# LANGUAGE FlexibleContexts #-}
 
-module ParseNumbers
+
+module Robust.Attoparsec
   ( nDigitInt
   , limit
   , ParseBoundedInt, bounded, unsigned, negative, signed
@@ -8,59 +8,59 @@ module ParseNumbers
 
 import Common
 
-import Text.Parsec ( ParsecT, Stream )
-import Data.Text ( Text )
-import Text.Parsec ( char, digit, notFollowedBy, (<?>), (<|>), try )
+-- parsing UTF-8 encoded text
+import Data.Attoparsec.Text ( Parser, char, string, digit, peekChar, (<?>) )
+
 import Control.Monad ( when )
-import Data.Word
-import Data.Int
+import Control.Applicative ( (<|>) )
+
+import Data.Int ( Int8, Int16, Int32, Int64 )
+import Data.Word ( Word8, Word16, Word32, Word64 )
 
 
 ----------------------------------------------------------------------
+-- number parsing primitives
 
 {-
-Test the parsed value.  Note: `check t p` uses `try p`, and succeeds
-iff `t <$> p`.
+Test the parsed value, succeeds iff `t <$> p`.
 -}
 
-check :: Stream s m Char
-      => (a -> Bool) -> ParsecT s u m a -> ParsecT s u m a
+check :: (a -> Bool) -> Parser a -> Parser a
 
-check t p = try $ do
+check t p = do
   x <- p
-  when (not $ t x) $ fail "invalid"
+  when (not $ t x) $ fail "check"
   return x
 
 
+
 {-
-Enforces limits on parsed value.  First argument is for error message.
+Enforces limits on parsed value.
 -}
 
-limit :: (Ord a, Show a, Stream s m Char)
-      => String -> a -> a -> ParsecT s u m a -> ParsecT s u m a
+limit :: Ord a => a -> a -> Parser a -> Parser a
 
-limit what lo hi p =
-  check ((>= lo) &&& (<= hi)) p
-  <?>
-  concat [what, " in range ", show lo, " to ", show hi]
+limit lo hi = check $ (>= lo) &&& (<= hi)
+
 
 
 {-
 Parses one decimal digit into its value.
 -}
 
-decimalDigit :: (Stream s m Char, Num a) => ParsecT s u m a
+decimalDigit :: Num a => Parser a
 
 decimalDigit = fromIntegral . subtract (fromEnum '0') . fromEnum <$> digit
 
 
+
 {-
 Parse an integer represented by exactly n digits.  This parser does
-not fail if unconsumed digits remain, which allows followup parsers to
-consume followup digits.
+not fail if unconsumed digits remain, which allows follow-up parsers
+to consume follow-up digits.
 -}
 
-nDigitInt :: (Integral a, Stream s m Char) => Int -> ParsecT s u m a
+nDigitInt :: Integral a => Int -> Parser a
 
 nDigitInt = go 0
   where
@@ -84,22 +84,32 @@ exceeds the limits.
 .. `hi`.  The type must be big enough to contain that range.  `hi`
 must be positive, the lower bound is 0.  Leading zero is not
 permitted.
+
+On out of bounds error, this parser does (intentionally) not backtrack
+to just reading fewer digits.  This is achieved by hoisting the
+decision of success in line A above the alternative in line B.
 -}
 
-unsigned :: (Integral a, Stream s m Char) => a -> ParsecT s u m a
+unsigned :: Integral a => a -> Parser a
 
-unsigned hi = zero <|> (decimalDigit >>= go)
+unsigned hi = decimalDigit >>= start
   where
-    zero = char '0' >> notFollowedBy digit >> pure 0
+    start 0 = pure 0 <* noMoreDigits
+    start d | d <= hi = go d >>= maybe oob pure             -- A
+            | otherwise = oob
 
-    go !acc = more <|> pure acc
+    go !acc = (decimalDigit >>= cont) <|> pure (Just acc)   -- B
       where
-        more = do
-          d <- decimalDigit
-          acc < lim || (acc == lim && d <= m) ? go (10 * acc + d)
-            $ fail "out of bounds"
+        cont d | ok acc d = go (10 * acc + d)
+               | otherwise = pure Nothing
 
     (lim, m) = hi `divMod` 10
+    ok acc d = acc < lim || (acc == lim && d <= m)
+
+    noMoreDigits = check (maybe True $ (< '0') ||| (> '9')) peekChar
+      <?> "nondigit"
+
+    oob = fail "out of bounds"
 
 
 {-
@@ -118,20 +128,26 @@ upper bound, and thus wrap around, e.g., incorrectly `negate (minBound
 :: Int8)` → `-128` due to the upper bound of `127`.
 -}
 
-negative :: (Integral a, Stream s m Char) => a -> ParsecT s u m a
+negative :: Integral a => a -> Parser a
 
-negative lo = char '-' >> notFollowedBy (char '0') >> ndd >>= go
+negative lo = char '-' >> ndd >>= start
   where
-    go !acc = more <|> pure acc
+    start 0 = fail "negative zero"
+    start d | lo <= d = go d >>= maybe oob pure   -- A
+            | otherwise = oob
+
+    go !acc = (ndd >>= cont) <|> pure (Just acc)  -- B
       where
-        more = do
-          d <- ndd
-          lim < acc || (acc == lim && m <= d) ? go (10 * acc + d)
-            $ fail "out of bounds"
+        cont d | ok acc d = go (10 * acc + d)
+               | otherwise = pure Nothing
 
     (lim, m) = lo `quotRem` 10
+    ok acc d = lim < acc || (acc == lim && m <= d)
 
     ndd = negate <$> decimalDigit
+
+    oob = fail "out of bounds"
+
 
 
 {-
@@ -141,21 +157,21 @@ must be negative, and `hi` must be positive.  A leading zero (or
 following the optional leading `-`) is not allowed.
 -}
 
-signed :: (Integral a, Stream s m Char) => a -> a -> ParsecT s u m a
+signed :: Integral a => a -> a -> Parser a
 
 signed lo hi = unsigned hi <|> negative lo
 
 
+
 {-
 `bounded` parses a bounded decimal integer, and fails if the limits
-are exceeded.
+are exceeded.  Note, that instantiation to `ParseBoundedInt` requires
+`Integral` which is quite a lot.  For types with less context, maybe
+rather use `signed` or `unsigned` instead.
 -}
 
-
-
 class Integral a => ParseBoundedInt a where
-  bounded :: Stream s m Char => ParsecT s u m a
-
+  bounded :: Parser a
 
 instance ParseBoundedInt Word where bounded = unsigned maxBound
 instance ParseBoundedInt Word8 where bounded = unsigned maxBound
