@@ -1,12 +1,12 @@
 {-# LANGUAGE FlexibleContexts #-}
 
-module Robust.Parsec
+module Data.RobustInt.Parsec
   ( nDigitInt
   , limit
   , ParseBoundedInt, bounded, unsigned, negative, signed
   ) where
 
-import Common
+import Data.RobustInt.Internal
 
 import Text.Parsec ( ParsecT, Stream )
 import Data.Text ( Text )

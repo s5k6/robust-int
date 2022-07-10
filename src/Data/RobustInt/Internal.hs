@@ -1,4 +1,4 @@
-module Common
+module Data.RobustInt.Internal
   ( (?)
   , (&&&), (|||), nott
   )

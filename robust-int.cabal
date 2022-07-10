@@ -1,19 +1,19 @@
-cabal-version:       3.4
+cabal-version:       3.0
 -- For further documentation, see http://haskell.org/cabal/users-guide/
 
 name:                robust-int
-version:             0.0.0.0
+version:             1.0.0
 -- synopsis:
 -- description:
 -- bug-reports:
 -- license:
-license-file:        LICENSE
+-- license-file:        LICENSE
 author:              Stefan Klinger
 maintainer:          git@stefan-klinger.de
 -- copyright:
 -- category:
 build-type:          Simple
-extra-source-files:  CHANGELOG.md
+-- extra-source-files:  CHANGELOG.md
 
 
 common shared-properties
@@ -31,14 +31,14 @@ library
   import:              shared-properties
   hs-source-dirs:      src
 
-  exposed-modules:     Robust.Parsec, Robust.Attoparsec
-  other-modules:       Common
+  exposed-modules:     Data.RobustInt.Parsec, Data.RobustInt.Attoparsec
+  other-modules:       Data.RobustInt.Internal
 
-  build-depends:       base >=4.14 && <4.16
-                     , parsec >= 3.1.14 && < 3.2
-                     , attoparsec >= 0.14.2 && < 0.15
-                     , bytestring >= 0.10.12.1 && < 0.11
-                     , text >= 1.2 && < 1.3
+  build-depends:       base
+                     , parsec
+                     , attoparsec
+                     , bytestring
+                     , text
 
 
 -- Testing --
@@ -50,7 +50,7 @@ library
 library internal-6BPcqrt4ct4U
   import:              shared-properties
   hs-source-dirs:      src
-  exposed-modules:     Common
+  exposed-modules:     Data.RobustInt.Internal
   build-depends:       base
 
 
@@ -63,9 +63,9 @@ test-suite parsec
 
   build-depends:       robust-int
                      , robust-int:internal-6BPcqrt4ct4U
-                     , base >=4.14 && <4.16
-                     , parsec >= 3.1.14 && < 3.2
-                     , text >= 1.2 && < 1.3
+                     , base
+                     , parsec
+                     , text
 
 test-suite attoparsecText
   import:              shared-properties
@@ -76,9 +76,9 @@ test-suite attoparsecText
 
   build-depends:       robust-int
                      , robust-int:internal-6BPcqrt4ct4U
-                     , base >=4.14 && <4.16
-                     , text >= 1.2 && < 1.3
-                     , attoparsec >= 0.14.2 && < 0.15
+                     , base
+                     , text
+                     , attoparsec
 
 test-suite attoparsecBytestring
   import:              shared-properties
@@ -89,10 +89,10 @@ test-suite attoparsecBytestring
 
   build-depends:       robust-int
                      , robust-int:internal-6BPcqrt4ct4U
-                     , base >=4.14 && <4.16
-                     , bytestring >= 0.10.12.1 && < 0.11
-                     , attoparsec >= 0.14.2 && < 0.15
-                     , utf8-string >= 1.0.2 && < 1.1
+                     , base
+                     , bytestring
+                     , attoparsec
+                     , utf8-string
 
 
 -- [1]: https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/using-warnings.html

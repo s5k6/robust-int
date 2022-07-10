@@ -1,11 +1,11 @@
 
-module Robust.Attoparsec
+module Data.RobustInt.Attoparsec
   ( nDigitInt
   , limit
   , ParseBoundedInt, bounded, unsigned, negative, signed
   ) where
 
-import Common
+import Data.RobustInt.Internal
 
 
 import Data.Attoparsec.Internal.Types ( Parser )

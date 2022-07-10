@@ -6,8 +6,8 @@ import Text.Parsec.Text ( GenParser )
 import Text.Parsec ( parse, eof )
 import System.Environment ( getArgs )
 import System.Exit ( exitFailure )
-import Common
-import Robust.Parsec
+import Data.RobustInt.Internal
+import Data.RobustInt.Parsec
 import Data.Word
 import Data.Int
 import Control.Monad ( unless )

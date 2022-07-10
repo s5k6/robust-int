@@ -7,10 +7,10 @@ import Data.ByteString.UTF8 ( fromString )
 import Data.Word
 import Data.Int
 import Data.Proxy
-import Common
 import Control.Monad ( unless )
 
-import Robust.Attoparsec -- ( ParseBoundedInt, bounded )
+import Data.RobustInt.Internal
+import Data.RobustInt.Attoparsec -- ( ParseBoundedInt, bounded )
 
 import Data.Attoparsec.ByteString ( parseOnly, endOfInput, eitherResult )
 
