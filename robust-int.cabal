@@ -21,6 +21,7 @@ common shared-properties
   default-extensions:  BangPatterns
                      , ScopedTypeVariables
                      , OverloadedStrings
+                     , LambdaCase
 
   -- see [1] for warnings
   ghc-options:         -Wall -Werror
@@ -54,45 +55,60 @@ library internal-6BPcqrt4ct4U
   build-depends:       base
 
 
-test-suite parsec
+
+-- test-suite parsec
+--   import:              shared-properties
+--   type:                exitcode-stdio-1.0
+--
+--   hs-source-dirs:      test
+--   main-is:             Parsec.hs
+--
+--   build-depends:       robust-int
+--                      , robust-int:internal-6BPcqrt4ct4U
+--                      , base
+--                      , parsec
+--                      , text
+--
+-- test-suite attoparsecText
+--   import:              shared-properties
+--   type:                exitcode-stdio-1.0
+--
+--   hs-source-dirs:      test
+--   main-is:             AttoparsecText.hs
+--
+--   build-depends:       robust-int
+--                      , robust-int:internal-6BPcqrt4ct4U
+--                      , base
+--                      , text
+--                      , attoparsec
+--
+-- test-suite attoparsecBytestring
+--   import:              shared-properties
+--   type:                exitcode-stdio-1.0
+--
+--   hs-source-dirs:      test
+--   main-is:             AttoparsecByteString.hs
+--
+--   build-depends:       robust-int
+--                      , robust-int:internal-6BPcqrt4ct4U
+--                      , base
+--                      , bytestring
+--                      , attoparsec
+--                      , utf8-string
+
+test-suite AttoparsecByteString
   import:              shared-properties
-  type:                exitcode-stdio-1.0
 
-  hs-source-dirs:      test
-  main-is:             Parsec.hs
+  default-extensions:  TemplateHaskell
 
-  build-depends:       robust-int
-                     , robust-int:internal-6BPcqrt4ct4U
-                     , base
-                     , parsec
-                     , text
-
-test-suite attoparsecText
-  import:              shared-properties
-  type:                exitcode-stdio-1.0
-
-  hs-source-dirs:      test
-  main-is:             AttoparsecText.hs
-
-  build-depends:       robust-int
-                     , robust-int:internal-6BPcqrt4ct4U
-                     , base
-                     , text
-                     , attoparsec
-
-test-suite attoparsecBytestring
-  import:              shared-properties
   type:                exitcode-stdio-1.0
 
   hs-source-dirs:      test
   main-is:             AttoparsecByteString.hs
 
-  build-depends:       robust-int
-                     , robust-int:internal-6BPcqrt4ct4U
-                     , base
+  build-depends:       base
+                     , robust-int
+                     , QuickCheck
+                     , random
                      , bytestring
                      , attoparsec
-                     , utf8-string
-
-
--- [1]: https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/using-warnings.html

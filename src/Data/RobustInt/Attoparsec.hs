@@ -96,7 +96,7 @@ not fail if unconsumed digits remain, which allows follow-up parsers
 to consume follow-up digits.
 -}
 
-nDigitInt :: (Integral a, Generic i) => Int -> Parser i a
+nDigitInt :: (Integral a, Generic i) => Word -> Parser i a
 
 nDigitInt = go 0
   where
