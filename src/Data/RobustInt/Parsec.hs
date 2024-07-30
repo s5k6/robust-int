@@ -9,7 +9,6 @@ module Data.RobustInt.Parsec
 import Data.RobustInt.Internal
 
 import Text.Parsec ( ParsecT, Stream )
-import Data.Text ( Text )
 import Text.Parsec ( char, digit, notFollowedBy, (<?>), (<|>), try )
 import Control.Monad ( when )
 

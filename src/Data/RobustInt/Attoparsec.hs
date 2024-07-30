@@ -9,7 +9,6 @@ import Data.RobustInt.Internal
 
 
 import Data.Attoparsec.Internal.Types ( Parser )
-import Data.Attoparsec.Combinator ( (<?>) )
 
 import Control.Monad ( when )
 import Control.Applicative ( (<|>) )

@@ -3,7 +3,6 @@ module Main ( main ) where
 import Data.RobustInt.Attoparsec
 
 import Test.QuickCheck
-import Data.Char ( isDigit )
 import Data.Int
 import Data.Word
 import Data.String ( fromString )
@@ -11,7 +10,7 @@ import Data.String ( fromString )
 import System.Environment ( getArgs )
 import System.Exit ( exitFailure )
 import System.Random ( Random )
-import Data.Attoparsec.Text ( parseOnly, endOfInput, eitherResult )
+import Data.Attoparsec.Text ( parseOnly, endOfInput )
 
 import qualified Data.Text as T
 

@@ -16,20 +16,41 @@ build-type:          Simple
 -- extra-source-files:  CHANGELOG.md
 
 
-common shared-properties
+common shared
   default-language:    Haskell2010
   default-extensions:  BangPatterns
                      , ScopedTypeVariables
                      , OverloadedStrings
                      , LambdaCase
 
+common devel
+  import:              shared
+
   -- see [1] for warnings
-  ghc-options:         -Wall -Werror
-                       -Wno-unused-imports -Wno-unused-top-binds
+  ghc-options:         -Wall
+                       -Wwarn=deprecations
+                       -Wno-orphans
+                       -Wwarn=name-shadowing
+
+common production
+  import:              shared
+  ghc-options:         -Wall
+                       -Werror
+                       -Wwarn=missing-local-signatures
+                       -Wwarn=missing-export-lists
+                       -Wwarn=unused-top-binds
+                       -Wwarn=deprecations
+                       -Werror=unused-imports
+                       -Wno-orphans
+                       -Wwarn=name-shadowing
+
+common chosen-properties
+  import: production
+
 
 
 library
-  import:              shared-properties
+  import:              chosen-properties
   hs-source-dirs:      src
 
   exposed-modules:     Data.RobustInt.Parsec, Data.RobustInt.Attoparsec
@@ -45,43 +66,21 @@ library
 -- Testing --
 -------------
 
--- Make library's private modules avaliable in test suite, use random
--- name to avoid shadowing.
-
-library internal-6BPcqrt4ct4U
-  import:              shared-properties
-  hs-source-dirs:      src
-  exposed-modules:     Data.RobustInt.Internal
-  build-depends:       base
-
-
-
--- test-suite parsec
---   import:              shared-properties
---   type:                exitcode-stdio-1.0
---
---   hs-source-dirs:      test
---   main-is:             Parsec.hs
---
---   build-depends:       robust-int
---                      , robust-int:internal-6BPcqrt4ct4U
---                      , base
---                      , parsec
---                      , text
-
-
 common test
-  import:              shared-properties
+  import:              chosen-properties
 
   default-extensions:  TemplateHaskell
 
   hs-source-dirs:      test
 
+  -- Does not work.  A bug?
+  -- type:                exitcode-stdio-1.0
+
 
 test-suite attoparsecByteString
   import:              test
-
   type:                exitcode-stdio-1.0
+
   main-is:             AttoparsecByteString.hs
 
   build-depends:       base
@@ -93,8 +92,8 @@ test-suite attoparsecByteString
 
 test-suite attoparsecText
   import:              test
-
   type:                exitcode-stdio-1.0
+
   main-is:             AttoparsecText.hs
 
   build-depends:       base
@@ -106,8 +105,8 @@ test-suite attoparsecText
 
 test-suite parsecText
   import:              test
-
   type:                exitcode-stdio-1.0
+
   main-is:             ParsecText.hs
 
   build-depends:       base

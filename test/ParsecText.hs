@@ -3,7 +3,6 @@ module Main ( main ) where
 import Data.RobustInt.Parsec
 
 import Test.QuickCheck
-import Data.Char ( isDigit )
 import Data.Int
 import Data.Word
 import Data.String ( fromString )
