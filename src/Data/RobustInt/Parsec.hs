@@ -14,7 +14,6 @@ module Data.RobustInt.Parsec
   , nDigitInt
   ) where
 
-import Data.RobustInt.Internal
 import Data.Word
 import Data.Int
 
@@ -65,8 +64,9 @@ unsigned hi = zero <|> (decimalDigit >>= go)
       where
         more = do
           d <- decimalDigit
-          acc < lim || (acc == lim && d <= m) ? go (10 * acc + d)
-            $ fail "out of bounds"
+          if acc < lim || (acc == lim && d <= m)
+            then go (10 * acc + d)
+            else fail "out of bounds"
 
     (lim, m) = hi `divMod` 10
 
@@ -97,8 +97,9 @@ negative lo = char '-' >> notFollowedBy (char '0') >> ndd >>= go
       where
         more = do
           d <- ndd
-          lim < acc || (acc == lim && m <= d) ? go (10 * acc + d)
-            $ fail "out of bounds"
+          if lim < acc || (acc == lim && m <= d)
+            then go (10 * acc + d)
+            else fail "out of bounds"
 
     (lim, m) = lo `quotRem` 10
 

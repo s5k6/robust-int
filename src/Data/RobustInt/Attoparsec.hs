@@ -12,7 +12,6 @@ __hidden class__ @Generic@:
 instance Generic 'T.Text'
 instance Generic 'B.ByteString'
 @
-
 -}
 
 module Data.RobustInt.Attoparsec
@@ -21,10 +20,9 @@ module Data.RobustInt.Attoparsec
   , nDigitInt
   ) where
 
-import Data.RobustInt.Internal
 import Data.Attoparsec.Internal.Types ( Parser )
 import Control.Monad ( when )
-import Control.Applicative ( (<|>) )
+import Control.Applicative ( (<|>), liftA2 )
 import Data.Int ( Int8, Int16, Int32, Int64 )
 import Data.Word ( Word8, Word16, Word32, Word64 )
 
@@ -35,6 +33,24 @@ import qualified Data.Text as T
 -- parsing byte strings
 import qualified Data.Attoparsec.ByteString as B
 import qualified Data.ByteString as B
+
+
+
+{- Lifted boolean operators. -}
+
+infixr 3 <&&>
+
+(<&&>) :: Applicative f => f Bool -> f Bool -> f Bool
+
+(<&&>) = liftA2 (&&)
+
+
+
+infixr 2 <||>
+
+(<||>) :: Applicative f => f Bool -> f Bool -> f Bool
+
+(<||>) = liftA2 (||)
 
 
 
@@ -53,7 +69,7 @@ check t p = do
 
 limit :: Ord a => a -> a -> Parser i a -> Parser i a
 
-limit lo hi = check $ (>= lo) &&& (<= hi)
+limit lo hi = check $ (>= lo) <&&> (<= hi)
 
 
 
@@ -77,7 +93,7 @@ instance Generic T.Text where
     fromIntegral . subtract (fromEnum '0') . fromEnum <$> T.digit
 
   noMoreDigits =
-    check (maybe True $ (< '0') ||| (> '9')) T.peekChar >> pure ()
+    check (maybe True $ (< '0') <||> (> '9')) T.peekChar >> pure ()
 
   minus =
     T.char '-' >> pure ()
@@ -88,7 +104,7 @@ instance Generic B.ByteString where
     fromIntegral . subtract 48 <$> limit 48 57 B.anyWord8
 
   noMoreDigits =
-    check (maybe True $ (< 48) ||| (> 57)) B.peekWord8 >> pure ()
+    check (maybe True $ (< 48) <||> (> 57)) B.peekWord8 >> pure ()
 
   minus =
     B.word8 45 >> pure ()

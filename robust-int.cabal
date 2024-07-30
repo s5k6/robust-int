@@ -54,7 +54,6 @@ library
   hs-source-dirs:      src
 
   exposed-modules:     Data.RobustInt.Parsec, Data.RobustInt.Attoparsec
-  other-modules:       Data.RobustInt.Internal
 
   build-depends:       base
                      , parsec
