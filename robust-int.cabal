@@ -91,7 +91,6 @@ test-suite attoparsecByteString
                      , bytestring
                      , attoparsec
 
-
 test-suite attoparsecText
   import:              test
 
@@ -104,3 +103,16 @@ test-suite attoparsecText
                      , random
                      , text
                      , attoparsec
+
+test-suite parsecText
+  import:              test
+
+  type:                exitcode-stdio-1.0
+  main-is:             ParsecText.hs
+
+  build-depends:       base
+                     , robust-int
+                     , QuickCheck
+                     , random
+                     , text
+                     , parsec
