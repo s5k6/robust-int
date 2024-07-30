@@ -11,11 +11,9 @@ import Data.String ( fromString )
 import System.Environment ( getArgs )
 import System.Exit ( exitFailure )
 import System.Random ( Random )
-import Data.Attoparsec.ByteString ( parseOnly, endOfInput, eitherResult )
+import Data.Attoparsec.Text ( parseOnly, endOfInput, eitherResult )
 
-import qualified Data.ByteString as B
-import qualified Data.ByteString.Lazy as BL
-import qualified Data.ByteString.Builder as BB
+import qualified Data.Text as T
 
 
 
@@ -27,7 +25,7 @@ roundtrip_bounded x = case parseOnly (bounded <* endOfInput) s of
   Right y -> x == y
   Left _ -> False
   where
-    s :: B.ByteString
+    s :: T.Text
     s = fromString $ show x
 
 
@@ -66,7 +64,7 @@ prop_roundtrip_bounded_Word64 = roundtrip_bounded
 
 -- Testing error detection for excessive values
 
-newtype Excessive a = Excessive B.ByteString
+newtype Excessive a = Excessive T.Text
   deriving Show
 
 
@@ -142,7 +140,7 @@ foo :: [(Int, Int)] -> Gen Int
 foo xs = frequency [ (u - l + 1, choose r) | r@(l,u) <- xs ]
 
 
-data Invalid a = Invalid B.ByteString
+data Invalid a = Invalid T.Text
   deriving Show
 
 

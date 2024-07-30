@@ -68,42 +68,20 @@ library internal-6BPcqrt4ct4U
 --                      , base
 --                      , parsec
 --                      , text
---
--- test-suite attoparsecText
---   import:              shared-properties
---   type:                exitcode-stdio-1.0
---
---   hs-source-dirs:      test
---   main-is:             AttoparsecText.hs
---
---   build-depends:       robust-int
---                      , robust-int:internal-6BPcqrt4ct4U
---                      , base
---                      , text
---                      , attoparsec
---
--- test-suite attoparsecBytestring
---   import:              shared-properties
---   type:                exitcode-stdio-1.0
---
---   hs-source-dirs:      test
---   main-is:             AttoparsecByteString.hs
---
---   build-depends:       robust-int
---                      , robust-int:internal-6BPcqrt4ct4U
---                      , base
---                      , bytestring
---                      , attoparsec
---                      , utf8-string
 
-test-suite AttoparsecByteString
+
+common test
   import:              shared-properties
 
   default-extensions:  TemplateHaskell
 
-  type:                exitcode-stdio-1.0
-
   hs-source-dirs:      test
+
+
+test-suite attoparsecByteString
+  import:              test
+
+  type:                exitcode-stdio-1.0
   main-is:             AttoparsecByteString.hs
 
   build-depends:       base
@@ -111,4 +89,18 @@ test-suite AttoparsecByteString
                      , QuickCheck
                      , random
                      , bytestring
+                     , attoparsec
+
+
+test-suite attoparsecText
+  import:              test
+
+  type:                exitcode-stdio-1.0
+  main-is:             AttoparsecText.hs
+
+  build-depends:       base
+                     , robust-int
+                     , QuickCheck
+                     , random
+                     , text
                      , attoparsec
