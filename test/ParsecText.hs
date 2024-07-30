@@ -1,6 +1,6 @@
 module Main ( main ) where
 
-import Data.RobustInt.Attoparsec
+import Data.RobustInt.Parsec
 
 import Test.QuickCheck
 import Data.Int
@@ -10,7 +10,7 @@ import Data.String ( fromString )
 import System.Environment ( getArgs )
 import System.Exit ( exitFailure )
 import System.Random ( Random )
-import Data.Attoparsec.Text ( parseOnly, endOfInput )
+import Text.Parsec ( parse, eof )
 
 import qualified Data.Text as T
 
@@ -20,7 +20,7 @@ import qualified Data.Text as T
 
 roundtrip_bounded :: (Show a, ParseBoundedInt a) => a -> Bool
 
-roundtrip_bounded x = case parseOnly (bounded <* endOfInput) s of
+roundtrip_bounded x = case parse (bounded <* eof) "" s of
   Right y -> x == y
   Left _ -> False
   where
@@ -85,13 +85,13 @@ exceed_bounded
   :: forall a. (Bounded a, ParseBoundedInt a)
   => Excessive a -> Bool
 
-exceed_bounded (Excessive s) = case parseOnly (bounded <* endOfInput) s of
+exceed_bounded (Excessive s) = case parse (bounded <* eof) "" s of
   Right (_ :: a) -> False  -- Note 2
   Left _ -> True
 
 {- Note 2: ScopedTypeVariables are needed here to select the right
 `bounded` function.  It is chosen by defining the value returned by
-`parseOnly` to be `Either … a` on the left side of the first case
+`parse` to be `Either … a` on the left side of the first case
 branch. -}
 
 
@@ -160,7 +160,7 @@ invalid_bounded
   :: forall a. (Bounded a, ParseBoundedInt a)
   => Invalid a -> Bool
 
-invalid_bounded (Invalid s) = case parseOnly (bounded <* endOfInput) s of
+invalid_bounded (Invalid s) = case parse (bounded <* eof) "" s of
   Right (_ :: a) -> False  -- Note 2
   Left _ -> True
 
@@ -219,7 +219,7 @@ roundtrip_nDigitInt
   :: (Show a, Num a, Integral a) => Word -> a -> Bool
 
 roundtrip_nDigitInt n' x' =
-  case parseOnly (nDigitInt n <* endOfInput) s of
+  case parse (nDigitInt n <* eof) s of
     Right y -> x == y
     Left _ -> False
 

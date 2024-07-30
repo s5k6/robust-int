@@ -2,12 +2,12 @@ cabal-version:       3.0
 -- For further documentation, see http://haskell.org/cabal/users-guide/
 
 name:                robust-int
-version:             1.0.0
+version:             1.1.0
 -- synopsis:
 -- description:
 -- bug-reports:
 -- license:
--- license-file:        LICENSE
+license-file:        LICENSE
 author:              Stefan Klinger
 maintainer:          git@stefan-klinger.de
 -- copyright:
@@ -16,23 +16,44 @@ build-type:          Simple
 -- extra-source-files:  CHANGELOG.md
 
 
-common shared-properties
+common shared
   default-language:    Haskell2010
   default-extensions:  BangPatterns
                      , ScopedTypeVariables
                      , OverloadedStrings
+                     , LambdaCase
+
+common devel
+  import:              shared
 
   -- see [1] for warnings
-  ghc-options:         -Wall -Werror
-                       -Wno-unused-imports -Wno-unused-top-binds
+  ghc-options:         -Wall
+                       -Wwarn=deprecations
+                       -Wno-orphans
+                       -Wwarn=name-shadowing
+
+common production
+  import:              shared
+  ghc-options:         -Wall
+                       -Werror
+                       -Wwarn=missing-local-signatures
+                       -Wwarn=missing-export-lists
+                       -Wwarn=unused-top-binds
+                       -Wwarn=deprecations
+                       -Werror=unused-imports
+                       -Wno-orphans
+                       -Wwarn=name-shadowing
+
+common chosen-properties
+  import: production
+
 
 
 library
-  import:              shared-properties
+  import:              chosen-properties
   hs-source-dirs:      src
 
   exposed-modules:     Data.RobustInt.Parsec, Data.RobustInt.Attoparsec
-  other-modules:       Data.RobustInt.Internal
 
   build-depends:       base
                      , parsec
@@ -44,55 +65,52 @@ library
 -- Testing --
 -------------
 
--- Make library's private modules avaliable in test suite, use random
--- name to avoid shadowing.
+common test
+  import:              chosen-properties
 
-library internal-6BPcqrt4ct4U
-  import:              shared-properties
-  hs-source-dirs:      src
-  exposed-modules:     Data.RobustInt.Internal
-  build-depends:       base
-
-
-test-suite parsec
-  import:              shared-properties
-  type:                exitcode-stdio-1.0
+  default-extensions:  TemplateHaskell
 
   hs-source-dirs:      test
-  main-is:             Parsec.hs
 
-  build-depends:       robust-int
-                     , robust-int:internal-6BPcqrt4ct4U
-                     , base
-                     , parsec
-                     , text
+  -- Does not work.  A bug?
+  -- type:                exitcode-stdio-1.0
 
-test-suite attoparsecText
-  import:              shared-properties
+
+test-suite attoparsecByteString
+  import:              test
   type:                exitcode-stdio-1.0
 
-  hs-source-dirs:      test
-  main-is:             AttoparsecText.hs
-
-  build-depends:       robust-int
-                     , robust-int:internal-6BPcqrt4ct4U
-                     , base
-                     , text
-                     , attoparsec
-
-test-suite attoparsecBytestring
-  import:              shared-properties
-  type:                exitcode-stdio-1.0
-
-  hs-source-dirs:      test
   main-is:             AttoparsecByteString.hs
 
-  build-depends:       robust-int
-                     , robust-int:internal-6BPcqrt4ct4U
-                     , base
+  build-depends:       base
+                     , robust-int
+                     , QuickCheck
+                     , random
                      , bytestring
                      , attoparsec
-                     , utf8-string
 
+test-suite attoparsecText
+  import:              test
+  type:                exitcode-stdio-1.0
 
--- [1]: https://downloads.haskell.org/~ghc/latest/docs/html/users_guide/using-warnings.html
+  main-is:             AttoparsecText.hs
+
+  build-depends:       base
+                     , robust-int
+                     , QuickCheck
+                     , random
+                     , text
+                     , attoparsec
+
+test-suite parsecText
+  import:              test
+  type:                exitcode-stdio-1.0
+
+  main-is:             ParsecText.hs
+
+  build-depends:       base
+                     , robust-int
+                     , QuickCheck
+                     , random
+                     , text
+                     , parsec

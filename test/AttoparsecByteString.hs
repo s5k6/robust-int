@@ -1,144 +1,268 @@
-
 module Main ( main ) where
 
+import Data.RobustInt.Attoparsec
 
-import Data.ByteString ( ByteString, pack )
-import Data.ByteString.UTF8 ( fromString )
-import Data.Word
+import Test.QuickCheck
 import Data.Int
-import Data.Proxy
-import Control.Monad ( unless )
+import Data.Word
+import Data.String ( fromString )
 
-import Data.RobustInt.Internal
-import Data.RobustInt.Attoparsec -- ( ParseBoundedInt, bounded )
+import System.Environment ( getArgs )
+import System.Exit ( exitFailure )
+import System.Random ( Random )
+import Data.Attoparsec.ByteString ( parseOnly, endOfInput )
 
-import Data.Attoparsec.ByteString ( parseOnly, endOfInput, eitherResult )
-
-
-{-
-Apply the `bounded` parser to some input, reduce parser output to
-maybe the value.  This subsumes all error messages under `Nothing`.
--}
-
-testBounded :: ParseBoundedInt a => String -> Maybe a
-
-testBounded t = case parseOnly (bounded <* endOfInput) (fromString t) of
-  Right v -> Just v
-  Left _ -> Nothing
+import qualified Data.ByteString as B
 
 
-{-
-Do a test and show (IO) the result in an easily parsable format.
--}
 
-showTest :: forall a . (Show a, ParseBoundedInt a, Named a)
-         => Proxy a -> String -> Maybe Integer -> IO ()
+-- Testing roundtrip for valid values
 
-showTest ty text expected = do
-  putStrLn $ unwords
-    [ ok ? "ok" $ "FAILED"
-    , name ty
-    , show text
-    , maybe "none" show result
-    ]
-  unless ok $ fail "Failed"
+roundtrip_bounded :: (Show a, ParseBoundedInt a) => a -> Bool
+
+roundtrip_bounded x = case parseOnly (bounded <* endOfInput) s of
+  Right y -> x == y
+  Left _ -> False
   where
-    result = testBounded text :: Maybe a
-    ok = (fromIntegral <$> result) == expected
+    s :: B.ByteString
+    s = fromString $ show x
 
 
-{-
-Test for unsigned types: -5 .. -1 fail, 0 .. 5, hi-5 .. hi succeed,
-hi+1 .. hi+5 fail.  "00", "01", "-" and "" are invalid.
--}
 
-testUnsigned
-  :: forall a. (ParseBoundedInt a, Show a, Bounded a, Named a)
-  => Proxy a -> IO ()
+prop_roundtrip_bounded_Int :: Int -> Bool
+prop_roundtrip_bounded_Int = roundtrip_bounded
 
-testUnsigned ty = do
+prop_roundtrip_bounded_Int8 :: Int8 -> Bool
+prop_roundtrip_bounded_Int8 = roundtrip_bounded
 
-  mapM_ (\x -> showTest ty (show x) Nothing)
-    [negate 5 :: Integer .. negate 1]
+prop_roundtrip_bounded_Int16 :: Int16 -> Bool
+prop_roundtrip_bounded_Int16 = roundtrip_bounded
 
-  mapM_ (\x -> showTest ty (show x) (Just x))
-    $ [0 .. 5] ++ [hi - 5 .. hi]
+prop_roundtrip_bounded_Int32 :: Int32 -> Bool
+prop_roundtrip_bounded_Int32 = roundtrip_bounded
 
-  mapM_ (\x -> showTest ty (show x) Nothing)
-    [fromIntegral hi + 1 :: Integer .. fromIntegral hi + 5]
+prop_roundtrip_bounded_Int64 :: Int64 -> Bool
+prop_roundtrip_bounded_Int64 = roundtrip_bounded
 
-  showTest ty "00" Nothing
-  showTest ty "01" Nothing
-  showTest ty "-" Nothing
-  showTest ty "" Nothing
+prop_roundtrip_bounded_Word :: Word -> Bool
+prop_roundtrip_bounded_Word = roundtrip_bounded
+
+prop_roundtrip_bounded_Word8 :: Word8 -> Bool
+prop_roundtrip_bounded_Word8 = roundtrip_bounded
+
+prop_roundtrip_bounded_Word16 :: Word16 -> Bool
+prop_roundtrip_bounded_Word16 = roundtrip_bounded
+
+prop_roundtrip_bounded_Word32 :: Word32 -> Bool
+prop_roundtrip_bounded_Word32 = roundtrip_bounded
+
+prop_roundtrip_bounded_Word64 :: Word64 -> Bool
+prop_roundtrip_bounded_Word64 = roundtrip_bounded
+
+
+
+-- Testing error detection for excessive values
+
+newtype Excessive a = Excessive B.ByteString
+  deriving Show
+
+
+instance (Bounded a, Integral a) => Arbitrary (Excessive a) where
+  arbitrary = do
+    n :: Int <- arbitrary
+    pure . Excessive . fromString . show
+      $ if n >= 0
+        then toInteger (maxBound :: a) + toInteger n + 1  -- Note 1
+        else toInteger (minBound :: a) + toInteger n
+
+{- Note 1: Adding 1 simply omits hitting 0 by shifting the positive
+numbers one to the right.  Must be done in `Integer` domain to avoid
+wrap around-}
+
+
+
+exceed_bounded
+  :: forall a. (Bounded a, ParseBoundedInt a)
+  => Excessive a -> Bool
+
+exceed_bounded (Excessive s) = case parseOnly (bounded <* endOfInput) s of
+  Right (_ :: a) -> False  -- Note 2
+  Left _ -> True
+
+{- Note 2: ScopedTypeVariables are needed here to select the right
+`bounded` function.  It is chosen by defining the value returned by
+`parseOnly` to be `Either … a` on the left side of the first case
+branch. -}
+
+
+
+prop_exceed_bounded_Int :: Excessive Int -> Bool
+prop_exceed_bounded_Int = exceed_bounded
+
+prop_exceed_bounded_Int8 :: Excessive Int8 -> Bool
+prop_exceed_bounded_Int8 = exceed_bounded
+
+prop_exceed_bounded_Int16 :: Excessive Int16 -> Bool
+prop_exceed_bounded_Int16 = exceed_bounded
+
+prop_exceed_bounded_Int32 :: Excessive Int32 -> Bool
+prop_exceed_bounded_Int32 = exceed_bounded
+
+prop_exceed_bounded_Int64 :: Excessive Int64 -> Bool
+prop_exceed_bounded_Int64 = exceed_bounded
+
+prop_exceed_bounded_Word :: Excessive Word -> Bool
+prop_exceed_bounded_Word = exceed_bounded
+
+prop_exceed_bounded_Word8 :: Excessive Word8 -> Bool
+prop_exceed_bounded_Word8 = exceed_bounded
+
+prop_exceed_bounded_Word16 :: Excessive Word16 -> Bool
+prop_exceed_bounded_Word16 = exceed_bounded
+
+prop_exceed_bounded_Word32 :: Excessive Word32 -> Bool
+prop_exceed_bounded_Word32 = exceed_bounded
+
+prop_exceed_bounded_Word64 :: Excessive Word64 -> Bool
+prop_exceed_bounded_Word64 = exceed_bounded
+
+
+
+-- Testing error detection for invalid input values
+
+
+{- This combines QuickCheck's `frequency` with `choose`: The element is
+chosen from list of ranges, each range weighted by its size -}
+
+foo :: [(Int, Int)] -> Gen Int
+
+foo xs = frequency [ (u - l + 1, choose r) | r@(l,u) <- xs ]
+
+
+data Invalid a = Invalid B.ByteString
+  deriving Show
+
+
+
+instance (Random a, Show a, Bounded a) => Arbitrary (Invalid a) where
+  arbitrary = do
+    x <- show <$> choose (minBound :: a, maxBound)
+    (left, right) <- flip splitAt x <$> arbitrary
+    c <- toEnum <$> if null left
+                    then foo [(0,44),(46,47),(58,255)]
+                    else foo [(0,47),(58,255)]
+
+    pure . Invalid . fromString $ left ++ c : right
+
+
+
+invalid_bounded
+  :: forall a. (Bounded a, ParseBoundedInt a)
+  => Invalid a -> Bool
+
+invalid_bounded (Invalid s) = case parseOnly (bounded <* endOfInput) s of
+  Right (_ :: a) -> False  -- Note 2
+  Left _ -> True
+
+
+
+prop_invalid_bounded_Int :: Invalid Int -> Bool
+prop_invalid_bounded_Int = invalid_bounded
+
+prop_invalid_bounded_Int8 :: Invalid Int8 -> Bool
+prop_invalid_bounded_Int8 = invalid_bounded
+
+prop_invalid_bounded_Int16 :: Invalid Int16 -> Bool
+prop_invalid_bounded_Int16 = invalid_bounded
+
+prop_invalid_bounded_Int32 :: Invalid Int32 -> Bool
+prop_invalid_bounded_Int32 = invalid_bounded
+
+prop_invalid_bounded_Int64 :: Invalid Int64 -> Bool
+prop_invalid_bounded_Int64 = invalid_bounded
+
+prop_invalid_bounded_Word :: Invalid Word -> Bool
+prop_invalid_bounded_Word = invalid_bounded
+
+prop_invalid_bounded_Word8 :: Invalid Word8 -> Bool
+prop_invalid_bounded_Word8 = invalid_bounded
+
+prop_invalid_bounded_Word16 :: Invalid Word16 -> Bool
+prop_invalid_bounded_Word16 = invalid_bounded
+
+prop_invalid_bounded_Word32 :: Invalid Word32 -> Bool
+prop_invalid_bounded_Word32 = invalid_bounded
+
+prop_invalid_bounded_Word64 :: Invalid Word64 -> Bool
+prop_invalid_bounded_Word64 = invalid_bounded
+
+
+
+
+
+{- TODO
+-- testing fixed width integers
+
+len :: (Show a, Integral b) => a -> b
+
+len = fromIntegral . length . show
+
+
+
+zeropad :: Show a => Word -> a -> String
+
+zeropad n x = reverse . take (fromIntegral n) $ reverse (show x) ++ repeat '0'
+
+
+
+roundtrip_nDigitInt
+  :: (Show a, Num a, Integral a) => Word -> a -> Bool
+
+roundtrip_nDigitInt n' x' =
+  case parseOnly (nDigitInt n <* endOfInput) s of
+    Right y -> x == y
+    Left _ -> False
 
   where
-    hi = fromIntegral (maxBound :: a)
+    n = len x + n'
+    x = abs x'
+    s = fromString $ zeropad n x
+
+
+
+roundtrip_nDigitInt_Int32 :: Word -> Int32 -> Bool
+roundtrip_nDigitInt_Int32 = roundtrip_nDigitInt
+
+roundtrip_nDigitInt_Integer :: Word -> Integer -> Bool
+roundtrip_nDigitInt_Integer = roundtrip_nDigitInt
+-}
 
 
 {-
-Test for signed types: lo-5 .. lo-1 fail, lo .. lo+5, -5 .. 5, hi-5
-.. hi succeed, hi+1 .. hi+5 fail.  "00", "01", "-0", "-" and "" are
-invalid.
+TODO
+
+  * repeated n-digit ints
 -}
 
-testSigned
-  :: forall a. (ParseBoundedInt a, Show a, Bounded a, Named a)
-  => Proxy a -> IO ()
-
-testSigned ty = do
-
-  mapM_ (\x -> showTest ty (show x) Nothing)
-    [fromIntegral lo - 5 :: Integer .. fromIntegral lo - 1]
-
-  mapM_ (\x -> showTest ty (show x) (Just x))
-    $ [lo .. lo + 5] ++ [-5 .. 5] ++ [hi - 5 .. hi]
-
-  mapM_ (\x -> showTest ty (show x) Nothing)
-    [fromIntegral hi + 1 :: Integer .. fromIntegral hi + 5]
-
-  showTest ty "00" Nothing
-  showTest ty "01" Nothing
-  showTest ty "-0" Nothing
-  showTest ty "-" Nothing
-  showTest ty "" Nothing
-
-  where
-    lo = fromIntegral (minBound :: a)
-    hi = fromIntegral (maxBound :: a)
 
 
-{-
-Simply a device to print the name of a type.
--}
-
-class Named a where
-  name :: Proxy a -> String
-
-instance Named Word where name _ = "Word"
-instance Named Word8 where name _ = "Word8"
-instance Named Word16 where name _ = "Word16"
-instance Named Word32 where name _ = "Word32"
-instance Named Word64 where name _ = "Word64"
-
-instance Named Int where name _ = "Int"
-instance Named Int8 where name _ = "Int8"
-instance Named Int16 where name _ = "Int16"
-instance Named Int32 where name _ = "Int32"
-instance Named Int64 where name _ = "Int64"
+return [] -- this is somehow needed for template haskell
 
 
 
 main :: IO ()
-main = do
-   testUnsigned (Proxy :: Proxy Word)
-   testUnsigned (Proxy :: Proxy Word8)
-   testUnsigned (Proxy :: Proxy Word16)
-   testUnsigned (Proxy :: Proxy Word32)
-   testUnsigned (Proxy :: Proxy Word64)
 
-   testSigned (Proxy :: Proxy Int)
-   testSigned (Proxy :: Proxy Int8)
-   testSigned (Proxy :: Proxy Int16)
-   testSigned (Proxy :: Proxy Int32)
-   testSigned (Proxy :: Proxy Int64)
+main = do
+  putStrLn ""
+
+  args <- getArgs >>= \case
+    [] -> pure myStdArgs
+    [a, b] -> pure myStdArgs{ maxSuccess = read a, maxSize = read b }
+    _ -> error "Specify none or both as arguments: maxSuccess maxSize"
+
+  $(forAllProperties) (quickCheckWithResult args {-. verbose-} ) >>= \case
+    True -> pure ()
+    False -> exitFailure
+
+  where
+    myStdArgs = stdArgs{ maxSuccess = 1000 }
