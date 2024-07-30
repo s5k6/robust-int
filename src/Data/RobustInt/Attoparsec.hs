@@ -5,19 +5,14 @@ an error if the limits of a bounded type are exceeded, rather than
 wrapping around silently.
 
 This module is for use with 'Data.Attoparsec', supporting streams of
-type 'Data.Text' and 'Data.ByteString', both being instances of the
-__hidden class__ @Generic@:
-
-@
-instance Generic 'T.Text'
-instance Generic 'B.ByteString'
-@
+type 'Data.Text' and 'Data.ByteString'.
 -}
 
 module Data.RobustInt.Attoparsec
   ( unsigned, signed, negative
   , ParseBoundedInt, bounded
   , nDigitInt
+  , Stream(..)
   ) where
 
 import Data.Attoparsec.Internal.Types ( Parser )
@@ -74,9 +69,9 @@ limit lo hi = check $ (>= lo) <&&> (<= hi)
 
 
 {-| This class provides the minimal properties needed from the input
-stream to be able to parse integes from it. -}
+stream to be able to parse integes. -}
 
-class Generic i where
+class Stream i where
 
   {-| Parse and convert one decimal digit. -}
   decimalDigit :: Num a => Parser i a
@@ -88,7 +83,7 @@ class Generic i where
   minus :: Parser i ()
 
 
-instance Generic T.Text where
+instance Stream T.Text where
   decimalDigit =
     fromIntegral . subtract (fromEnum '0') . fromEnum <$> T.digit
 
@@ -99,7 +94,7 @@ instance Generic T.Text where
     T.char '-' >> pure ()
 
 
-instance Generic B.ByteString where
+instance Stream B.ByteString where
   decimalDigit =
     fromIntegral . subtract 48 <$> limit 48 57 B.anyWord8
 
@@ -118,7 +113,7 @@ This parser __does wrap around__, should the type not be large enough.
 This parser does not fail if unconsumed digits remain, which allows
 follow-up parsers to consume follow-up digits. -}
 
-nDigitInt :: (Integral a, Generic i) => Word -> Parser i a
+nDigitInt :: (Integral a, Stream i) => Word -> Parser i a
 
 nDigitInt = go 0
   where
@@ -138,7 +133,7 @@ enough to contain that range.
 On out of bounds error, this parser does intentionally not backtrack
 to just reading fewer digits. -}
 
-unsigned :: (Integral a, Generic i) => a -> Parser i a
+unsigned :: (Integral a, Stream i) => a -> Parser i a
 
 unsigned hi = decimalDigit >>= start
   where
@@ -175,7 +170,7 @@ minBound)@ fails, because the negation of the lower bound may not be
 e.g., incorrectly @negate (minBound :: Int8)@ → @-128@ due to the
 upper bound of @127@. -}
 
-negative :: (Generic i, Integral a) => a -> Parser i a
+negative :: (Stream i, Integral a) => a -> Parser i a
 
 negative lo = minus >> ndd >>= start
   where
@@ -204,7 +199,7 @@ leading @-@) is not allowed.
 @lo@ must be negative, and @hi@ must be positive.  The type must be
 big enough to contain that range. -}
 
-signed :: (Generic i, Integral a) => a -> a -> Parser i a
+signed :: (Stream i, Integral a) => a -> a -> Parser i a
 
 signed lo hi = unsigned hi <|> negative lo
 
@@ -218,7 +213,7 @@ class Integral a => ParseBoundedInt a where
 
   {-| Parses a bounded integer, using the bounds set at instantiation. -}
 
-  bounded :: Generic i => Parser i a
+  bounded :: Stream i => Parser i a
 
 
 
