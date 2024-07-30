@@ -17,7 +17,7 @@ module Data.RobustInt.Attoparsec
 
 import Data.Attoparsec.Internal.Types ( Parser )
 import Control.Monad ( when )
-import Control.Applicative ( (<|>), liftA2 )
+import Control.Applicative ( (<|>) )
 import Data.Int ( Int8, Int16, Int32, Int64 )
 import Data.Word ( Word8, Word16, Word32, Word64 )
 
