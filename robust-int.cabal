@@ -5,11 +5,11 @@ version: 1.1.0
 
 synopsis: Robust integer parsers
 
-description: Integer parsers for Parsec (for Text) and Attoparsec (for
-  ByteString and Text), that fail instead of wrapping around.  I.e.,
-  if the input reads "298", then an attempt to parse a value of type
-  `Word8` will report the error, rather than silently (and
-  incorrectly) return the value 42.
+description: Integer parsers for Parsec (on Text streams) and
+  Attoparsec (on ByteString and Text streams), that fail instead of
+  wrapping around.  I.e., if the input reads "298", then an attempt to
+  parse a value of type `Word8` will report the error, rather than
+  silently (and incorrectly) return the value 42.
 
 category: Text, Parsing
 
@@ -24,6 +24,7 @@ package-url:         https://github.com/s5k6/robust-int
 build-type:          Simple
 
 extra-source-files: stack.yaml, stack.yaml.lock
+                  , README.md
 
 
 
@@ -123,3 +124,15 @@ test-suite parsecText
                      , random
                      , text
                      , parsec
+
+executable demo
+  import:              test
+  type:                exitcode-stdio-1.0
+
+  hs-source-dirs:      demo
+  main-is:             Demo.hs
+
+  build-depends:       base
+                     , robust-int
+                     , text
+                     , attoparsec
