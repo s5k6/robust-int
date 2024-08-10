@@ -198,54 +198,6 @@ prop_invalid_bounded_Word64 = invalid_bounded
 
 
 
-
-
-{- TODO
--- testing fixed width integers
-
-len :: (Show a, Integral b) => a -> b
-
-len = fromIntegral . length . show
-
-
-
-zeropad :: Show a => Word -> a -> String
-
-zeropad n x = reverse . take (fromIntegral n) $ reverse (show x) ++ repeat '0'
-
-
-
-roundtrip_nDigitInt
-  :: (Show a, Num a, Integral a) => Word -> a -> Bool
-
-roundtrip_nDigitInt n' x' =
-  case parseOnly (nDigitInt n <* endOfInput) s of
-    Right y -> x == y
-    Left _ -> False
-
-  where
-    n = len x + n'
-    x = abs x'
-    s = fromString $ zeropad n x
-
-
-
-roundtrip_nDigitInt_Int32 :: Word -> Int32 -> Bool
-roundtrip_nDigitInt_Int32 = roundtrip_nDigitInt
-
-roundtrip_nDigitInt_Integer :: Word -> Integer -> Bool
-roundtrip_nDigitInt_Integer = roundtrip_nDigitInt
--}
-
-
-{-
-TODO
-
-  * repeated n-digit ints
--}
-
-
-
 return [] -- this is somehow needed for template haskell
 
 
