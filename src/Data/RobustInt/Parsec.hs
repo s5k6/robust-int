@@ -11,7 +11,6 @@ This module is for use with 'Text.Parsec'. -}
 module Data.RobustInt.Parsec
   ( unsigned, signed, negative
   , ParseBoundedInt, bounded
-  , nDigitInt
   ) where
 
 import Data.Word
@@ -27,24 +26,6 @@ import Text.Parsec ( char, digit, notFollowedBy, (<|>) )
 decimalDigit :: (Stream s m Char, Num a) => ParsecT s u m a
 
 decimalDigit = fromIntegral . subtract (fromEnum '0') . fromEnum <$> digit
-
-
-
-{-| Parse an integer represented by exactly @n@ digits.
-
-This parser __does wrap around__, should the type not be large enough.
-
-This parser does not fail if unconsumed digits remain, which allows
-follow-up parsers to consume follow-up digits. -}
-
-nDigitInt :: (Integral a, Stream s m Char) => Int -> ParsecT s u m a
-
-nDigitInt = go 0
-  where
-    go !acc 0 = return acc
-    go !acc r = do
-      d <- decimalDigit
-      go (10 * acc + d) (r - 1)
 
 
 

@@ -11,7 +11,6 @@ type 'Data.Text' and 'Data.ByteString'.
 module Data.RobustInt.Attoparsec
   ( unsigned, signed, negative
   , ParseBoundedInt, bounded
-  , nDigitInt
   , Stream(..)
   ) where
 
@@ -103,24 +102,6 @@ instance Stream B.ByteString where
 
   minus =
     B.word8 45 >> pure ()
-
-
-
-{-| Parse an integer represented by exactly @n@ digits.
-
-This parser __does wrap around__, should the type not be large enough.
-
-This parser does not fail if unconsumed digits remain, which allows
-follow-up parsers to consume follow-up digits. -}
-
-nDigitInt :: (Integral a, Stream i) => Word -> Parser i a
-
-nDigitInt = go 0
-  where
-    go !acc 0 = return acc
-    go !acc r = do
-      d <- decimalDigit
-      go (10 * acc + d) (r - 1)
 
 
 

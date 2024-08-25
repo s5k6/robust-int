@@ -1,19 +1,31 @@
-cabal-version:       3.0
--- For further documentation, see http://haskell.org/cabal/users-guide/
+cabal-version: 3.0
 
-name:                robust-int
-version:             1.1.0
--- synopsis:
--- description:
--- bug-reports:
--- license:
+name: robust-int
+version: 1.1.1
+
+synopsis: Robust integer parsers
+
+description: Integer parsers for Parsec (on Text streams) and
+  Attoparsec (on ByteString and Text streams), that fail instead of
+  wrapping around.  I.e., if the input reads "298", then an attempt to
+  parse a value of type `Word8` will report the error, rather than
+  silently (and incorrectly) return the value 42.
+
+category: Text, Parsing
+
+license:             AGPL-3.0-or-later
 license-file:        LICENSE
-author:              Stefan Klinger
+author:              Stefan Klinger <https://stefan-klinger.de/>
 maintainer:          git@stefan-klinger.de
--- copyright:
--- category:
+copyright:           © 2021 Stefan Klinger
+
+package-url:         https://github.com/s5k6/robust-int
+
 build-type:          Simple
--- extra-source-files:  CHANGELOG.md
+
+extra-source-files: stack.yaml, stack.yaml.lock
+                  , README.md
+
 
 
 common shared
@@ -26,7 +38,6 @@ common shared
 common devel
   import:              shared
 
-  -- see [1] for warnings
   ghc-options:         -Wall
                        -Wwarn=deprecations
                        -Wno-orphans
@@ -35,7 +46,6 @@ common devel
 common production
   import:              shared
   ghc-options:         -Wall
-                       -Werror
                        -Wwarn=missing-local-signatures
                        -Wwarn=missing-export-lists
                        -Wwarn=unused-top-binds
@@ -55,7 +65,7 @@ library
 
   exposed-modules:     Data.RobustInt.Parsec, Data.RobustInt.Attoparsec
 
-  build-depends:       base
+  build-depends:       base >=4.18 && <4.19
                      , parsec
                      , attoparsec
                      , bytestring
@@ -63,7 +73,6 @@ library
 
 
 -- Testing --
--------------
 
 common test
   import:              chosen-properties
@@ -74,6 +83,7 @@ common test
 
   -- Does not work.  A bug?
   -- type:                exitcode-stdio-1.0
+
 
 
 test-suite attoparsecByteString
@@ -114,3 +124,15 @@ test-suite parsecText
                      , random
                      , text
                      , parsec
+
+executable demo
+  import:              test
+  type:                exitcode-stdio-1.0
+
+  hs-source-dirs:      demo
+  main-is:             Demo.hs
+
+  build-depends:       base
+                     , robust-int
+                     , text
+                     , attoparsec
