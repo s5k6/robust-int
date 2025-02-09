@@ -12,8 +12,9 @@ ByteString and Text streams), that fail instead of wrapping around.
 Assume a program needs to parse the decimal representation of a
 bounded integral type.  You have chosen `Word8`, and use Attoparsec on
 Text streams.  The following examples can be replicated by loading
-GHCi with the appropriate set of modules.  Run `stack ghci
-robust-int:demo`.
+GHCi with the appropriate set of modules.  Run
+
+    $ stack ghci robust-int:demo
 
 
 Current situation
@@ -29,8 +30,8 @@ Attoparsec provides `decimal`:
     > parseOnly (decimal :: Parser Word8) $ pack "298"
     Right 42
 
-Both are wrong.  The user did not say "42".  The chosen type not big
-enough for 298.
+Both are wrong.  The user did not say "42".  The chosen type is not
+big enough for 298, leading to overflow, **obscuring the error**.
 
 
 Improvement

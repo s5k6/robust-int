@@ -65,7 +65,7 @@ library
 
   exposed-modules:     Data.RobustInt.Parsec, Data.RobustInt.Attoparsec
 
-  build-depends:       base >=4.18 && <4.19
+  build-depends:       base
                      , parsec
                      , attoparsec
                      , bytestring
@@ -127,7 +127,6 @@ test-suite parsecText
 
 executable demo
   import:              test
-  type:                exitcode-stdio-1.0
 
   hs-source-dirs:      demo
   main-is:             Demo.hs
