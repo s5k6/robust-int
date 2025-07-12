@@ -14,7 +14,7 @@ bounded integral type.  You have chosen `Word8`, and use Attoparsec on
 Text streams.  The following examples can be replicated by loading
 GHCi with the appropriate set of modules.  Run
 
-    $ stack ghci robust-int:demo
+    $ cabal repl robust-int:demo
 
 
 Current situation
@@ -57,7 +57,6 @@ Or by choosing an adequate type for the desired value:
 Build instructions
 ==================
 
-    $ stack build --test
-
-    $ stack haddock
-    $ firefox "$(stack path --local-doc-root)/index.html"
+    $ cabal build
+    $ cabal test
+    $ cabal haddock

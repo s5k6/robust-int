@@ -23,7 +23,7 @@ package-url:         https://github.com/s5k6/robust-int
 
 build-type:          Simple
 
-extra-source-files: stack.yaml, stack.yaml.lock
+extra-source-files: cabal.project, cabal.project.freeze, robust-int.cabal
                   , README.md
 
 
