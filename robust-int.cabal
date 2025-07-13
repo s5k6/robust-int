@@ -136,3 +136,4 @@ executable demo
                      , attoparsec
                      , parsec
                      , parsec3-numbers
+                     , megaparsec
