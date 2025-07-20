@@ -139,6 +139,23 @@ Build instructions
     $ cabal haddock
 
 
+Performance testing with the criterion library
+----------------------------------------------
+
+Since I'm new to using criterion for benchmarking, please do have a
+look at `./performance/Main.hs` and judge for yourself is this is a
+valid testing setup.  Feedback is welcome.
+
+    $ cabal run performance -- --output unspecialized.html
+
+I've included [the report][9] as produced on my machine.  In the
+unspecialized version, my implementation seems to be faster for short
+types (8bit integrals), but slower for large tyes (64bit).
+
+
+
+
+
 [1]: https://hackage.haskell.org/package/base-4.21.0.0/docs/Prelude.html#v:read
 [2]: https://hackage.haskell.org/package/attoparsec-0.14.4/docs/Data-Attoparsec-ByteString-Char8.html#v:decimal
 [3]: https://hackage.haskell.org/package/parsec-3.1.18.0/docs/Text-Parsec-Token.html#v:decimal
@@ -147,3 +164,4 @@ Build instructions
 [6]: https://hackage.haskell.org/package/parsec3-numbers
 [7]: https://github.com/s5k6/robust-int/blob/master/src/Data/RobustInt/Parsec.hs#L32-L52
 [8]: https://hackage.haskell.org/package/megaparsec-9.7.0/docs/Text-Megaparsec-Char-Lexer.html#v:decimal
+[9]: ./unspecialized.html

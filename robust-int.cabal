@@ -40,6 +40,7 @@ common devel
   ghc-options:         -Wall
                        -Wwarn=deprecations
                        -Wno-orphans
+                       -Wno-unused-imports
                        -Wwarn=name-shadowing
 
 common production
@@ -124,8 +125,11 @@ test-suite parsecText
                      , text
                      , parsec
 
+
+-- playing with robust integer parsing
+
 executable demo
-  import:              test
+  import:              chosen-properties
 
   hs-source-dirs:      demo
   main-is:             Demo.hs
@@ -137,3 +141,15 @@ executable demo
                      , parsec
                      , parsec3-numbers
                      , megaparsec
+
+executable performance
+  import:              chosen-properties
+
+  hs-source-dirs:      performance
+  main-is:             Main.hs
+
+  build-depends:       base
+                     , robust-int
+                     , text
+                     , parsec
+                     , criterion
