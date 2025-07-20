@@ -156,19 +156,18 @@ The benchmark tests 8bit and 64bit `Word` and `Int` parsing with
 `Parsec`.  The functions named `read`… use the GHC-provided `read`,
 the functions named `robust`… use my implementation.
 
-    $ cabal run performance -- --output unspecialized.html
-
 I've included [the report generated without specialisation][9] as
-produced on my machine.  In the unspecialized version, my
-implementation seems to be faster for short types (8bit integrals),
-but slower for large tyes (64bit).
+produced on my machine.  Go back to commit `15f170f` in order to
+verify this.  In the unspecialized version, my implementation seems to
+be faster for short types (8bit integrals), but slower for large tyes
+(64bit).
 
 I have only added specialisation to the Parsec implementation
 currently:
 
     $ cabal run performance -- --output specialized.html
 
-I've included [the report with specialized][10] as produced on my
+I've included [the report with specialisation][10] as produced on my
 machine.  In the specialized version, my implementation seems to be
 faster across the board, although the advantage seems to smaller for
 larger types (in the sense of more bits).
