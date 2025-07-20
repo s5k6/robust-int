@@ -27,6 +27,18 @@ decimalDigit :: (Stream s m Char, Num a) => ParsecT s u m a
 
 decimalDigit = fromIntegral . subtract (fromEnum '0') . fromEnum <$> digit
 
+-- bash: for x in {Int,Word}{,8,16,32,64}; do echo '{-# SPECIALIZE decimalDigit :: Stream s m Char => ParsecT s u m '"$x"' #-}'; done
+{-# SPECIALIZE decimalDigit :: Stream s m Char => ParsecT s u m Int #-}
+{-# SPECIALIZE decimalDigit :: Stream s m Char => ParsecT s u m Int8 #-}
+{-# SPECIALIZE decimalDigit :: Stream s m Char => ParsecT s u m Int16 #-}
+{-# SPECIALIZE decimalDigit :: Stream s m Char => ParsecT s u m Int32 #-}
+{-# SPECIALIZE decimalDigit :: Stream s m Char => ParsecT s u m Int64 #-}
+{-# SPECIALIZE decimalDigit :: Stream s m Char => ParsecT s u m Word #-}
+{-# SPECIALIZE decimalDigit :: Stream s m Char => ParsecT s u m Word8 #-}
+{-# SPECIALIZE decimalDigit :: Stream s m Char => ParsecT s u m Word16 #-}
+{-# SPECIALIZE decimalDigit :: Stream s m Char => ParsecT s u m Word32 #-}
+{-# SPECIALIZE decimalDigit :: Stream s m Char => ParsecT s u m Word64 #-}
+
 
 
 {-| @unsigned hi@ parses an unsigned decimal integer in the inclusive
@@ -50,6 +62,19 @@ unsigned hi = zero <|> (decimalDigit >>= go)
             else fail "out of bounds"
 
     (lim, m) = hi `divMod` 10
+
+
+-- bash: for x in {Int,Word}{,8,16,32,64}; do echo '{-# SPECIALIZE unsigned :: (Stream s m Char) => '"$x"' -> ParsecT s u m '"$x"' #-}'; done
+{-# SPECIALIZE unsigned :: (Stream s m Char) => Int -> ParsecT s u m Int #-}
+{-# SPECIALIZE unsigned :: (Stream s m Char) => Int8 -> ParsecT s u m Int8 #-}
+{-# SPECIALIZE unsigned :: (Stream s m Char) => Int16 -> ParsecT s u m Int16 #-}
+{-# SPECIALIZE unsigned :: (Stream s m Char) => Int32 -> ParsecT s u m Int32 #-}
+{-# SPECIALIZE unsigned :: (Stream s m Char) => Int64 -> ParsecT s u m Int64 #-}
+{-# SPECIALIZE unsigned :: (Stream s m Char) => Word -> ParsecT s u m Word #-}
+{-# SPECIALIZE unsigned :: (Stream s m Char) => Word8 -> ParsecT s u m Word8 #-}
+{-# SPECIALIZE unsigned :: (Stream s m Char) => Word16 -> ParsecT s u m Word16 #-}
+{-# SPECIALIZE unsigned :: (Stream s m Char) => Word32 -> ParsecT s u m Word32 #-}
+{-# SPECIALIZE unsigned :: (Stream s m Char) => Word64 -> ParsecT s u m Word64 #-}
 
 
 
@@ -86,6 +111,13 @@ negative lo = char '-' >> notFollowedBy (char '0') >> ndd >>= go
 
     ndd = negate <$> decimalDigit
 
+-- bash: for x in Int{,8,16,32,64}; do echo '{-# SPECIALIZE negative :: (Stream s m Char) => '"$x"' -> ParsecT s u m '"$x"' #-}'; done
+{-# SPECIALIZE negative :: (Stream s m Char) => Int -> ParsecT s u m Int #-}
+{-# SPECIALIZE negative :: (Stream s m Char) => Int8 -> ParsecT s u m Int8 #-}
+{-# SPECIALIZE negative :: (Stream s m Char) => Int16 -> ParsecT s u m Int16 #-}
+{-# SPECIALIZE negative :: (Stream s m Char) => Int32 -> ParsecT s u m Int32 #-}
+{-# SPECIALIZE negative :: (Stream s m Char) => Int64 -> ParsecT s u m Int64 #-}
+
 
 
 {-| @signed lo hi@ parses a signed decimal integer in the inclusive
@@ -98,6 +130,13 @@ big enough to contain that range. -}
 signed :: (Integral a, Stream s m Char) => a -> a -> ParsecT s u m a
 
 signed lo hi = unsigned hi <|> negative lo
+
+-- bash: for x in Int{,8,16,32,64}; do echo '{-# SPECIALIZE signed :: Stream s m Char => '"$x"' -> '"$x"' -> ParsecT s u m '"$x"' #-}'; done
+{-# SPECIALIZE signed :: Stream s m Char => Int -> Int -> ParsecT s u m Int #-}
+{-# SPECIALIZE signed :: Stream s m Char => Int8 -> Int8 -> ParsecT s u m Int8 #-}
+{-# SPECIALIZE signed :: Stream s m Char => Int16 -> Int16 -> ParsecT s u m Int16 #-}
+{-# SPECIALIZE signed :: Stream s m Char => Int32 -> Int32 -> ParsecT s u m Int32 #-}
+{-# SPECIALIZE signed :: Stream s m Char => Int64 -> Int64 -> ParsecT s u m Int64 #-}
 
 
 

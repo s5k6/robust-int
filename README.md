@@ -142,17 +142,36 @@ Build instructions
 Performance testing with the criterion library
 ----------------------------------------------
 
+TL/DR: With specialisation, my implementation seems faster than
+the [builtin `read` function][1].
+
+**Note:** I have never claimed to build fast parsers, only correct
+ones.
+
 Since I'm new to using criterion for benchmarking, please do have a
-look at `./performance/Main.hs` and judge for yourself is this is a
-valid testing setup.  Feedback is welcome.
+look at [the code](./performance/Main.hs) and judge for yourself is
+this is a valid testing setup.  Feedback is welcome.
+
+The benchmark tests 8bit and 64bit `Word` and `Int` parsing with
+`Parsec`.  The functions named `read`… use the GHC-provided `read`,
+the functions named `robust`… use my implementation.
 
     $ cabal run performance -- --output unspecialized.html
 
-I've included [the report][9] as produced on my machine.  In the
-unspecialized version, my implementation seems to be faster for short
-types (8bit integrals), but slower for large tyes (64bit).
+I've included [the report generated without specialisation][9] as
+produced on my machine.  In the unspecialized version, my
+implementation seems to be faster for short types (8bit integrals),
+but slower for large tyes (64bit).
 
+I have only added specialisation to the Parsec implementation
+currently:
 
+    $ cabal run performance -- --output specialized.html
+
+I've included [the report with specialized][10] as produced on my
+machine.  In the specialized version, my implementation seems to be
+faster across the board, although the advantage seems to smaller for
+larger types (in the sense of more bits).
 
 
 
@@ -165,3 +184,4 @@ types (8bit integrals), but slower for large tyes (64bit).
 [7]: https://github.com/s5k6/robust-int/blob/master/src/Data/RobustInt/Parsec.hs#L32-L52
 [8]: https://hackage.haskell.org/package/megaparsec-9.7.0/docs/Text-Megaparsec-Char-Lexer.html#v:decimal
 [9]: ./unspecialized.html
+[10]: ./specialized.html
